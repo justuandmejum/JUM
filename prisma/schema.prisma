@@ -1,0 +1,260 @@
+// JUM — Just U And Me
+// Core data model. See ROADMAP.md for the phase this belongs to.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model User {
+  id          String     @id @default(uuid())
+  // Either a nickname or a real name, depending on the anonymous/open choice
+  // made at booking time — see Booking.sharedRealInfo.
+  displayName String
+  email       String     @unique
+  phone       String?
+  status      UserStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+
+  bookings Booking[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Bookings — the single source of truth for a slot's lifecycle.
+//
+// State machine (see ROADMAP.md):
+//   TEMPORARILY_HELD -> PAYMENT_PENDING -> CONFIRMED -> COMPLETED
+//   also: BOOKING_FAILED, CUSTOMER_CANCELLED, CUSTOMER_NO_SHOW,
+//         JUM_CANCELLED, JUM_NO_SHOW
+//
+// Double-booking prevention: a partial unique index on (date, startTime)
+// scoped to "active" bookingStatus values is added by hand in
+// prisma/migrations/<ts>_add_slot_unique_index/migration.sql, since Prisma's
+// schema language doesn't yet express a filtered/partial unique index.
+// ---------------------------------------------------------------------------
+
+enum CallMethod {
+  JUM
+  GOOGLE_MEET
+  ZOOM
+  TEAMS
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum BookingStatus {
+  TEMPORARILY_HELD
+  PAYMENT_PENDING
+  CONFIRMED
+  COMPLETED
+  BOOKING_FAILED
+  CUSTOMER_CANCELLED
+  CUSTOMER_NO_SHOW
+  JUM_CANCELLED
+  JUM_NO_SHOW
+}
+
+model Booking {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // All times are IST wall-clock minutes since midnight (0-1439), matching
+  // the prototype's TIME_MINUTES convention — avoids timezone-conversion
+  // bugs since JUM only operates in IST regardless of visitor location.
+  date      DateTime @db.Date
+  startTime Int
+  endTime   Int
+  duration  Int // minutes
+
+  callMethod     CallMethod
+  sharedRealInfo Boolean    @default(false) // anonymous vs. open choice
+  notes          String?
+
+  amountInr Int // whole rupees, matching the prototype's pricing
+  callCode  String @unique // e.g. "JUM-XZHBKY"
+
+  paymentStatus PaymentStatus @default(PENDING)
+  bookingStatus BookingStatus @default(TEMPORARILY_HELD)
+  holdExpiresAt DateTime? // only meaningful while TEMPORARILY_HELD
+
+  createdAt DateTime @updatedAt @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments Payment[]
+  session  Session?
+  feedback Feedback?
+
+  @@index([date, startTime])
+  @@map("bookings")
+}
+
+// ---------------------------------------------------------------------------
+// Payments — separate from Booking so retries, extensions, and donations
+// each get their own record instead of overwriting booking state.
+// ---------------------------------------------------------------------------
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NETBANKING
+  WALLET
+}
+
+enum PaymentType {
+  SESSION
+  EXTENSION
+  DONATION
+}
+
+enum PaymentRecordStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Payment {
+  id String @id @default(uuid())
+
+  // Nullable: a sustainability donation isn't necessarily tied to a booking.
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  type   PaymentType
+  method PaymentMethod
+  amountInr Int
+  status PaymentRecordStatus @default(PENDING)
+
+  // Razorpay identifiers — never store card/UPI details themselves.
+  gatewayOrderId   String?
+  gatewayPaymentId String?
+  gatewayRefundId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// Sessions — the actual call, once a booking is CONFIRMED.
+// ---------------------------------------------------------------------------
+
+enum SessionStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  INTERRUPTED
+}
+
+model Session {
+  id        String  @id @default(uuid())
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  roomId    String? // Daily.co room name/identifier
+  status    SessionStatus @default(SCHEDULED)
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  extensionMinutes Int @default(0)
+
+  // A dropped-call callback link is limited to one use per session
+  // (see the prototype's Host Panel demo).
+  callbackUsed Boolean @default(false)
+
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Feedback
+// ---------------------------------------------------------------------------
+
+model Feedback {
+  id        String  @id @default(uuid())
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  rating  Int // 1-5
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@map("feedback")
+}
+
+// ---------------------------------------------------------------------------
+// Availability — the real availability engine's source of truth
+// (replaces the prototype's hardcoded 9am-10pm calendar).
+// ---------------------------------------------------------------------------
+
+enum AvailabilityType {
+  RECURRING_OPEN // e.g. every Monday 09:00-13:00
+  DATE_OPEN // a specific date's open window, overrides recurring
+  BLOCKED // vacation, emergency closure, etc.
+  HOLIDAY
+}
+
+model AvailabilityRule {
+  id   String           @id @default(uuid())
+  type AvailabilityType
+
+  // Set for RECURRING_OPEN (0 = Sunday ... 6 = Saturday); null otherwise.
+  dayOfWeek Int?
+
+  // Set for DATE_OPEN / BLOCKED / HOLIDAY; null for RECURRING_OPEN.
+  date DateTime? @db.Date
+
+  startMinutes Int? // null for a full-day BLOCKED/HOLIDAY entry
+  endMinutes   Int?
+
+  reason String?
+
+  createdAt DateTime @default(now())
+
+  @@map("availability_rules")
+}
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+
+enum AdminRole {
+  OWNER
+  STAFF
+}
+
+model Admin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(STAFF)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  @@map("admins")
+}
