@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const session = verifySessionToken(request.cookies.get(SESSION_COOKIE_NAME)?.value);
   if (!session) return Response.json({ error: "Not logged in." }, { status: 401 });
-  return Response.json({ admin: { email: session.email, role: session.role } });
+  return Response.json({ admin: { email: session.email, role: session.role }, csrfToken: session.csrfToken });
 }

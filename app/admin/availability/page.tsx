@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAdminAuth } from "../../../lib/useAdminAuth";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -35,8 +35,7 @@ function timeInputToMinutes(t: string): number {
 }
 
 export default function AdminAvailabilityPage() {
-  const router = useRouter();
-  const [checkedAuth, setCheckedAuth] = useState(false);
+  const { csrfToken, checkedAuth } = useAdminAuth();
 
   const [weekly, setWeekly] = useState<WeeklyRow[]>(
     Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, closed: true, startMinutes: DEFAULT_START, endMinutes: DEFAULT_END }))
@@ -53,18 +52,6 @@ export default function AdminAvailabilityPage() {
   const [newBlockReason, setNewBlockReason] = useState("");
   const [blockError, setBlockError] = useState<string | null>(null);
   const [addingBlock, setAddingBlock] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/admin/me")
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok }) => {
-        if (!ok) {
-          router.push("/admin/login");
-          return;
-        }
-        setCheckedAuth(true);
-      });
-  }, [router]);
 
   function refresh() {
     fetch("/api/admin/availability")
@@ -93,7 +80,7 @@ export default function AdminAvailabilityPage() {
     try {
       const res = await fetch("/api/admin/availability/weekly", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken ?? "" },
         body: JSON.stringify({ days: weekly }),
       });
       const data = await res.json();
@@ -121,7 +108,7 @@ export default function AdminAvailabilityPage() {
     try {
       const res = await fetch("/api/admin/availability/block", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken ?? "" },
         body: JSON.stringify({
           date: newBlockDate,
           type: newBlockType,
@@ -146,7 +133,7 @@ export default function AdminAvailabilityPage() {
   }
 
   async function removeBlock(id: string) {
-    await fetch(`/api/admin/availability/block/${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/availability/block/${id}`, { method: "DELETE", headers: { "x-csrf-token": csrfToken ?? "" } });
     refresh();
   }
 

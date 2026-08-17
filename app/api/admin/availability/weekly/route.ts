@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { checkAdminAuth } from "../../../../../lib/admin-auth";
+import { checkAdminAuthAndCsrf } from "../../../../../lib/admin-auth";
 import { prisma } from "../../../../../lib/prisma";
 import { AvailabilityType } from "../../../../../app/generated/prisma/enums";
 import { SLOT_STEP_MINUTES } from "../../../../../lib/availability";
@@ -28,7 +28,7 @@ function isValidDay(d: unknown): d is DayInput {
 // always sends all 7 days, closed or not, so a full replace is simpler
 // and safer than trying to diff against the existing rows.
 export async function PUT(request: NextRequest) {
-  const authError = checkAdminAuth(request);
+  const authError = checkAdminAuthAndCsrf(request);
   if (authError) return authError;
 
   let body: unknown;

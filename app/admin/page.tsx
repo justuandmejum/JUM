@@ -4,11 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatTimeOfDay, formatFullDateLabel } from "../../lib/i18n/bookingFormat";
-
-interface AdminInfo {
-  email: string;
-  role: string;
-}
+import { useAdminAuth } from "../../lib/useAdminAuth";
 
 interface PendingBooking {
   id: string;
@@ -46,8 +42,7 @@ function minutesLeft(isoExpiry: string, now: number): string {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [admin, setAdmin] = useState<AdminInfo | null>(null);
-  const [checkedAuth, setCheckedAuth] = useState(false);
+  const { admin, csrfToken, checkedAuth } = useAdminAuth();
 
   const [pending, setPending] = useState<PendingBooking[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingBooking[]>([]);
@@ -59,19 +54,6 @@ export default function AdminDashboardPage() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    fetch("/api/admin/me")
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok, data }) => {
-        if (!ok) {
-          router.push("/admin/login");
-          return;
-        }
-        setAdmin(data.admin);
-        setCheckedAuth(true);
-      });
-  }, [router]);
 
   const refresh = useCallback(() => {
     fetch("/api/bookings/pending")
@@ -93,7 +75,7 @@ export default function AdminDashboardPage() {
     setActingOn(bookingId);
     setActionError(null);
     try {
-      const res = await fetch(`/api/bookings/${bookingId}/${action}`, { method: "POST" });
+      const res = await fetch(`/api/bookings/${bookingId}/${action}`, { method: "POST", headers: { "x-csrf-token": csrfToken ?? "" } });
       const data = await res.json();
       if (!res.ok) {
         setActionError(data.error ?? `Could not ${action} this request.`);
@@ -112,7 +94,7 @@ export default function AdminDashboardPage() {
     setActingOn(bookingId);
     setActionError(null);
     try {
-      const res = await fetch(`/api/bookings/${bookingId}/admin-cancel`, { method: "POST" });
+      const res = await fetch(`/api/bookings/${bookingId}/admin-cancel`, { method: "POST", headers: { "x-csrf-token": csrfToken ?? "" } });
       const data = await res.json();
       if (!res.ok) {
         setActionError(data.error ?? "Could not cancel this session.");

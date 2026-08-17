@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { checkAdminAuth } from "../../../../../lib/admin-auth";
+import { checkAdminAuthAndCsrf } from "../../../../../lib/admin-auth";
 import { cancelByAdmin } from "../../../../../lib/cancellation";
 import { BookingError, InvalidBookingStateError } from "../../../../../lib/bookings";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // JUM cancelling a confirmed session (emergency, unavailability, etc.) —
 // always a full refund per the policy at /legal/refund.
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authError = checkAdminAuth(request);
+  const authError = checkAdminAuthAndCsrf(request);
   if (authError) return authError;
 
   const { id } = await params;

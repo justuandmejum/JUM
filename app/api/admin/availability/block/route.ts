@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { checkAdminAuth } from "../../../../../lib/admin-auth";
+import { checkAdminAuthAndCsrf } from "../../../../../lib/admin-auth";
 import { prisma } from "../../../../../lib/prisma";
 import { AvailabilityType } from "../../../../../app/generated/prisma/enums";
 import { SLOT_STEP_MINUTES } from "../../../../../lib/availability";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function POST(request: NextRequest) {
-  const authError = checkAdminAuth(request);
+  const authError = checkAdminAuthAndCsrf(request);
   if (authError) return authError;
 
   let body: Record<string, unknown>;

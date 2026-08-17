@@ -229,18 +229,18 @@ export default function BookPage() {
 
               <label>
                 <span>{sharePreference === "open" ? t("form.nameOpen") : t("form.nickname")}</span>
-                <input className="field" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                <input className="field" required maxLength={100} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
                 <span className="anonnote">{sharePreference === "open" ? t("form.openNote") : t("form.anonNote")}</span>
               </label>
 
               <label>
                 <span>{t("form.email")}</span>
-                <input className="field" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input className="field" type="email" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} />
               </label>
 
               <label>
                 <span>{t("form.phone")}</span>
-                <input className="field" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <input className="field" type="tel" maxLength={20} value={phone} onChange={(e) => setPhone(e.target.value)} />
               </label>
 
               <label>{t("form.calling")}</label>
@@ -261,7 +261,7 @@ export default function BookPage() {
 
               <label>
                 <span>{t("form.notes")}</span>
-                <textarea className="field" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <textarea className="field" rows={4} maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} />
               </label>
 
               <label>

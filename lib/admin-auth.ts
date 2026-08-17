@@ -23,3 +23,26 @@ export function checkAdminAuth(request: NextRequest): Response | null {
 
   return Response.json({ error: "Unauthorized." }, { status: 401 });
 }
+
+/** Same as checkAdminAuth, but for state-changing routes: when authenticated
+ * via the session cookie, also requires a matching `x-csrf-token` header —
+ * SameSite=Lax already blocks most cross-site POSTs in modern browsers, but
+ * this is real defense-in-depth rather than relying on that alone. Not
+ * required on the x-admin-key path, since that's not a browser/cookie flow
+ * and isn't exposed to CSRF the same way. */
+export function checkAdminAuthAndCsrf(request: NextRequest): Response | null {
+  const session = verifySessionToken(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+  if (session) {
+    const provided = request.headers.get("x-csrf-token");
+    if (!provided || !timingSafeStringEqual(provided, session.csrfToken)) {
+      return Response.json({ error: "Missing or invalid CSRF token." }, { status: 403 });
+    }
+    return null;
+  }
+
+  const expected = process.env.ADMIN_API_KEY;
+  const provided = request.headers.get("x-admin-key");
+  if (expected && provided && timingSafeStringEqual(provided, expected)) return null;
+
+  return Response.json({ error: "Unauthorized." }, { status: 401 });
+}

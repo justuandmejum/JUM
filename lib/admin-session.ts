@@ -47,10 +47,15 @@ export interface SessionPayload {
   email: string;
   role: string;
   expiresAt: number;
+  csrfToken: string;
 }
 
-export function createSessionToken(payload: Omit<SessionPayload, "expiresAt">): string {
-  const full: SessionPayload = { ...payload, expiresAt: Date.now() + SESSION_TTL_MS };
+/** Creates a session token, generating a fresh CSRF synchronizer token
+ * bound to it (not independently guessable, and only readable by the
+ * legitimate session holder via GET /api/admin/me — not attacker-controlled,
+ * so a cross-site request can carry the cookie automatically but not this). */
+export function createSessionToken(payload: Omit<SessionPayload, "expiresAt" | "csrfToken">): string {
+  const full: SessionPayload = { ...payload, expiresAt: Date.now() + SESSION_TTL_MS, csrfToken: crypto.randomBytes(24).toString("hex") };
   const body = Buffer.from(JSON.stringify(full)).toString("base64url");
   const signature = crypto.createHmac("sha256", getSessionSecret()).update(body).digest("base64url");
   return `${body}.${signature}`;
