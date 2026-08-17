@@ -38,7 +38,12 @@ The full phased roadmap (8 phases + deploy step, each tagged "you do this" vs "I
   - [x] `lib/prisma.ts` singleton client set up (Prisma 7 requires an explicit driver adapter — see Gotchas below)
   - [x] Git initialized, two commits made, identity set globally (Chandu / hello@justuandme.in)
   - [ ] Not yet done: any actual pages/API routes/UI — the schema and DB exist, but no booking flow has been built in Next.js yet
-- [ ] **Phase 2** — Real availability engine (replaces prototype's hardcoded 9am–10pm calendar). **Not started — natural next step.**
+- [~] **Phase 2** — Real availability engine (replaces prototype's hardcoded 9am–10pm calendar). **Core engine done:**
+  - [x] `lib/availability.ts` — computes open windows per date from `AvailabilityRule` (RECURRING_OPEN by day-of-week, DATE_OPEN overrides, BLOCKED/HOLIDAY subtracted), subtracts occupied ranges from active `Booking`s (CONFIRMED/PAYMENT_PENDING/COMPLETED, plus TEMPORARILY_HELD while `holdExpiresAt` hasn't passed), and returns bookable 30-min-aligned start times for a requested duration — excludes past times for today (IST)
+  - [x] `GET /api/availability?date=YYYY-MM-DD&duration=<mins>` route, `force-dynamic`, validated inputs — tested live against the real Neon DB via dev server
+  - [x] `scripts/seed-availability.ts` — seeded 7 `RECURRING_OPEN` rows (09:00–22:00 every day) so default behavior matches the prototype; already run against the real DB
+  - [x] `scripts/test-availability.ts` — 14/14 checks passing (plain open day, booking-overlap exclusion at two durations, full-day block, partial lunch-break block, today's past-time exclusion)
+  - [ ] Not yet done: admin UI for editing `AvailabilityRule`s (that's Phase 7) — for now hours are only set via the seed script/direct DB edits
 - [ ] **Phase 3** — Real booking system / server-enforced slot lock. The DB constraint is ready for this; the API endpoints that use it aren't built yet.
 - [ ] **Phase 4** — Real payment (Razorpay). Not started.
 - [ ] **Phase 5** — Notifications (Resend + Twilio). Not started.
@@ -61,8 +66,8 @@ The full phased roadmap (8 phases + deploy step, each tagged "you do this" vs "I
 
 ## Immediate next step (where this session paused)
 
-Two options were on the table when this conversation paused, user hadn't picked yet:
-1. Build Phase 2 (real availability engine) next, continuing backend work locally, **or**
+Phase 2's core availability engine is done (see above). Two options are on the table for next session, user hasn't picked yet:
+1. Build Phase 3 (real booking system / API routes using the DB slot-lock constraint + the new availability engine together — hold a slot, confirm it, expire stale holds), continuing backend work locally, **or**
 2. Do the Azure "hello world" deploy validation first (needs Azure account + GitHub repo created by the user first)
 
 Ask the user which they'd like before proceeding.
