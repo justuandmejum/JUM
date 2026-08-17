@@ -85,6 +85,38 @@ export async function fetchPayment(paymentId: string): Promise<RazorpayPayment> 
   return res.json();
 }
 
+export interface RazorpayRefund {
+  id: string;
+  payment_id: string;
+  amount: number; // paise
+  status: string; // "pending" | "processed" | "failed"
+}
+
+/** Creates a refund for a captured payment. Omit `amountInPaise` for a
+ * full refund. `receipt` is Razorpay's idempotency key for refunds — a
+ * retry with the same receipt is rejected as a duplicate rather than
+ * double-refunding. */
+export async function createRefund(paymentId: string, amountInPaise: number | undefined, receipt: string): Promise<RazorpayRefund> {
+  const { keyId, keySecret } = getCredentials();
+  const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+
+  const res = await fetch(`${RAZORPAY_API_BASE}/payments/${paymentId}/refund`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ amount: amountInPaise, receipt }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Razorpay refund failed (${res.status}): ${body}`);
+  }
+
+  return res.json();
+}
+
 /** Verifies the signature Checkout's client-side success handler returns.
  * `orderId` must come from our own records, not from the client request. */
 export function verifyPaymentSignature(orderId: string, paymentId: string, signature: string): boolean {

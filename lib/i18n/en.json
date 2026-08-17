@@ -1,4 +1,12 @@
 {
+  "cancel.button": "Cancel this session",
+  "cancel.confirmPrompt": "Are you sure you want to cancel this session?",
+  "cancel.confirmYes": "Yes, cancel",
+  "cancel.confirmNo": "No, keep it",
+  "cancel.refundInfo": "You'll receive a refund of ₹{amount} ({percent}%) to your original payment method.",
+  "cancel.noRefund": "No refund applies for cancellations this close to your session.",
+  "cancel.success": "Your session has been cancelled.",
+  "cancel.error": "Could not cancel this session. Please try again or email hello@justuandme.in.",
   "brandtag": "JUST U AND ME",
   "nav.home": "Home",
   "nav.how": "How It Works",

@@ -106,6 +106,25 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function cancelSession(bookingId: string) {
+    if (!window.confirm("Cancel this confirmed session? The customer will receive a full refund.")) return;
+    setActingOn(bookingId);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/admin-cancel`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error ?? "Could not cancel this session.");
+        return;
+      }
+      refresh();
+    } catch {
+      setActionError("Network error. Please try again.");
+    } finally {
+      setActingOn(null);
+    }
+  }
+
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.push("/admin/login");
@@ -186,8 +205,13 @@ export default function AdminDashboardPage() {
         ) : (
           <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
             {upcoming.map((b) => (
-              <div className="panel" key={b.id} style={{ margin: 0, maxWidth: "none", padding: 16 }}>
-                <b>{formatWhen(b.date, b.startTime)}</b> · {b.duration} min · {b.callMethod} · {b.user.displayName} · code {b.callCode}
+              <div className="panel" key={b.id} style={{ margin: 0, maxWidth: "none", padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                <span>
+                  <b>{formatWhen(b.date, b.startTime)}</b> · {b.duration} min · {b.callMethod} · {b.user.displayName} · code {b.callCode}
+                </span>
+                <button className="btn" disabled={actingOn === b.id} onClick={() => cancelSession(b.id)}>
+                  Cancel
+                </button>
               </div>
             ))}
           </div>
