@@ -89,18 +89,18 @@ export async function getOpenWindows(dateStr: string): Promise<Window[]> {
 }
 
 // Bookings in these statuses occupy their slot unconditionally.
-// PENDING_APPROVAL and TEMPORARILY_HELD also occupy it, but only while
-// their response/payment window (holdExpiresAt) hasn't expired — the
-// expiry sweep (lib/bookings.ts expireStaleHolds) flips stale ones to
-// BOOKING_FAILED, but until that runs we treat an expired window as free
-// rather than trusting the status alone.
-const BLOCKING_STATUSES: BookingStatus[] = [
-  BookingStatus.PAYMENT_PENDING,
-  BookingStatus.CONFIRMED,
-  BookingStatus.COMPLETED,
-];
+// PENDING_APPROVAL, TEMPORARILY_HELD, and PAYMENT_PENDING also occupy it,
+// but only while their response/payment window (holdExpiresAt) hasn't
+// expired — the expiry sweep (lib/bookings.ts expireStaleHolds) flips
+// stale ones to BOOKING_FAILED, but until that runs we treat an expired
+// window as free rather than trusting the status alone.
+const BLOCKING_STATUSES: BookingStatus[] = [BookingStatus.CONFIRMED, BookingStatus.COMPLETED];
 
-const TIMED_BLOCKING_STATUSES: BookingStatus[] = [BookingStatus.PENDING_APPROVAL, BookingStatus.TEMPORARILY_HELD];
+const TIMED_BLOCKING_STATUSES: BookingStatus[] = [
+  BookingStatus.PENDING_APPROVAL,
+  BookingStatus.TEMPORARILY_HELD,
+  BookingStatus.PAYMENT_PENDING,
+];
 
 /** Ranges (minutes since midnight) already occupied by bookings on this date. */
 export async function getBookedRanges(dateStr: string): Promise<Window[]> {

@@ -180,10 +180,28 @@ export async function listPendingApprovals() {
 export async function expireStaleHolds(): Promise<number> {
   const result = await prisma.booking.updateMany({
     where: {
-      bookingStatus: { in: [BookingStatus.PENDING_APPROVAL, BookingStatus.TEMPORARILY_HELD] },
+      bookingStatus: { in: [BookingStatus.PENDING_APPROVAL, BookingStatus.TEMPORARILY_HELD, BookingStatus.PAYMENT_PENDING] },
       holdExpiresAt: { lt: new Date() },
     },
     data: { bookingStatus: BookingStatus.BOOKING_FAILED },
   });
   return result.count;
+}
+
+/** Moves a booking to CONFIRMED if it isn't already — used by the payment
+ * verify/webhook paths (lib/payments.ts), which can both race to confirm
+ * the same booking (Razorpay may retry webhook delivery, and the client
+ * callback can arrive around the same time). Unlike confirmBooking(),
+ * this treats "already CONFIRMED" as success rather than an error. */
+export async function confirmBookingIfPending(id: string): Promise<Booking> {
+  const booking = await prisma.booking.findUnique({ where: { id } });
+  if (!booking) throw new BookingError(`Booking ${id} not found.`);
+  if (booking.bookingStatus === BookingStatus.CONFIRMED) return booking;
+  if (booking.bookingStatus !== BookingStatus.TEMPORARILY_HELD && booking.bookingStatus !== BookingStatus.PAYMENT_PENDING) {
+    throw new InvalidBookingStateError(`Booking ${id} is ${booking.bookingStatus}, not TEMPORARILY_HELD or PAYMENT_PENDING.`);
+  }
+  return prisma.booking.update({
+    where: { id },
+    data: { bookingStatus: BookingStatus.CONFIRMED, paymentStatus: PaymentStatus.SUCCESSFUL },
+  });
 }

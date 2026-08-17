@@ -152,7 +152,7 @@ model Payment {
   booking   Booking? @relation(fields: [bookingId], references: [id])
 
   type   PaymentType
-  method PaymentMethod
+  method PaymentMethod? // unknown until Razorpay checkout completes — filled in from the webhook/verify payload
   amountInr Int
   status PaymentRecordStatus @default(PENDING)
 
