@@ -37,15 +37,22 @@ model User {
 // ---------------------------------------------------------------------------
 // Bookings — the single source of truth for a slot's lifecycle.
 //
-// State machine (see ROADMAP.md):
-//   TEMPORARILY_HELD -> PAYMENT_PENDING -> CONFIRMED -> COMPLETED
-//   also: BOOKING_FAILED, CUSTOMER_CANCELLED, CUSTOMER_NO_SHOW,
-//         JUM_CANCELLED, JUM_NO_SHOW
+// State machine (see ROADMAP.md and lib/bookings.ts):
+//   PENDING_APPROVAL -> TEMPORARILY_HELD -> PAYMENT_PENDING -> CONFIRMED -> COMPLETED
+//   also: BOOKING_FAILED (declined, or either timer expired),
+//         CUSTOMER_CANCELLED, CUSTOMER_NO_SHOW, JUM_CANCELLED, JUM_NO_SHOW
+//
+// PENDING_APPROVAL is the real product flow, not a demo artifact: every
+// request needs JUM's manual accept/decline within a response window
+// (holdExpiresAt) before the customer is asked to pay. Once approved, the
+// booking moves to TEMPORARILY_HELD for a short payment window, matching
+// the prototype's UX (see lib/bookings.ts for both windows' lengths).
 //
 // Double-booking prevention: a partial unique index on (date, startTime)
-// scoped to "active" bookingStatus values is added by hand in
-// prisma/migrations/<ts>_add_slot_unique_index/migration.sql, since Prisma's
-// schema language doesn't yet express a filtered/partial unique index.
+// scoped to "active" bookingStatus values (including PENDING_APPROVAL) is
+// added by hand in prisma/migrations/<ts>_*_slot_unique_index/migration.sql,
+// since Prisma's schema language doesn't yet express a filtered/partial
+// unique index.
 // ---------------------------------------------------------------------------
 
 enum CallMethod {
@@ -64,6 +71,7 @@ enum PaymentStatus {
 }
 
 enum BookingStatus {
+  PENDING_APPROVAL
   TEMPORARILY_HELD
   PAYMENT_PENDING
   CONFIRMED
@@ -96,8 +104,8 @@ model Booking {
   callCode  String @unique // e.g. "JUM-XZHBKY"
 
   paymentStatus PaymentStatus @default(PENDING)
-  bookingStatus BookingStatus @default(TEMPORARILY_HELD)
-  holdExpiresAt DateTime? // only meaningful while TEMPORARILY_HELD
+  bookingStatus BookingStatus @default(PENDING_APPROVAL)
+  holdExpiresAt DateTime? // the response/payment window deadline; meaningful while PENDING_APPROVAL or TEMPORARILY_HELD
 
   createdAt DateTime @updatedAt @default(now())
   updatedAt DateTime @updatedAt

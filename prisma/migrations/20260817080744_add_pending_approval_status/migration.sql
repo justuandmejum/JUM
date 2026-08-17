@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "BookingStatus" ADD VALUE 'PENDING_APPROVAL';
+
+-- AlterTable
+ALTER TABLE "bookings" ALTER COLUMN "bookingStatus" SET DEFAULT 'PENDING_APPROVAL';

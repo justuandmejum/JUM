@@ -88,15 +88,19 @@ export async function getOpenWindows(dateStr: string): Promise<Window[]> {
   return windows.sort((a, b) => a.start - b.start);
 }
 
-// Bookings in these statuses occupy their slot. TEMPORARILY_HELD only
-// counts while its hold hasn't expired — Phase 3's scheduled expiry job
-// will flip stale holds to BOOKING_FAILED, but until then we treat an
-// expired hold as free rather than trusting the status alone.
+// Bookings in these statuses occupy their slot unconditionally.
+// PENDING_APPROVAL and TEMPORARILY_HELD also occupy it, but only while
+// their response/payment window (holdExpiresAt) hasn't expired — the
+// expiry sweep (lib/bookings.ts expireStaleHolds) flips stale ones to
+// BOOKING_FAILED, but until that runs we treat an expired window as free
+// rather than trusting the status alone.
 const BLOCKING_STATUSES: BookingStatus[] = [
   BookingStatus.PAYMENT_PENDING,
   BookingStatus.CONFIRMED,
   BookingStatus.COMPLETED,
 ];
+
+const TIMED_BLOCKING_STATUSES: BookingStatus[] = [BookingStatus.PENDING_APPROVAL, BookingStatus.TEMPORARILY_HELD];
 
 /** Ranges (minutes since midnight) already occupied by bookings on this date. */
 export async function getBookedRanges(dateStr: string): Promise<Window[]> {
@@ -106,7 +110,7 @@ export async function getBookedRanges(dateStr: string): Promise<Window[]> {
       date,
       OR: [
         { bookingStatus: { in: BLOCKING_STATUSES } },
-        { bookingStatus: BookingStatus.TEMPORARILY_HELD, holdExpiresAt: { gt: new Date() } },
+        { bookingStatus: { in: TIMED_BLOCKING_STATUSES }, holdExpiresAt: { gt: new Date() } },
       ],
     },
     select: { startTime: true, endTime: true },

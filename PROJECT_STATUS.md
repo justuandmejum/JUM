@@ -44,7 +44,15 @@ The full phased roadmap (8 phases + deploy step, each tagged "you do this" vs "I
   - [x] `scripts/seed-availability.ts` — seeded 7 `RECURRING_OPEN` rows (09:00–22:00 every day) so default behavior matches the prototype; already run against the real DB
   - [x] `scripts/test-availability.ts` — 14/14 checks passing (plain open day, booking-overlap exclusion at two durations, full-day block, partial lunch-break block, today's past-time exclusion)
   - [ ] Not yet done: admin UI for editing `AvailabilityRule`s (that's Phase 7) — for now hours are only set via the seed script/direct DB edits
-- [ ] **Phase 3** — Real booking system / server-enforced slot lock. The DB constraint is ready for this; the API endpoints that use it aren't built yet.
+- [~] **Phase 3** — Real booking system / server-enforced slot lock. **Core mechanics done:**
+  - [x] Booking state machine now matches the prototype's real UX (not a demo simplification): `PENDING_APPROVAL` → `TEMPORARILY_HELD` → `PAYMENT_PENDING` → `CONFIRMED` → `COMPLETED`, or `BOOKING_FAILED` (declined, or either window timed out). `PENDING_APPROVAL` is a genuine product decision — JUM manually accepts/declines every request within a response window before the customer pays — confirmed against the prototype's own "JUM is reviewing your request" screen and copy, not just its demo simulate-buttons.
+  - [x] Added `PENDING_APPROVAL` to `BookingStatus` (two migrations: `20260817080744_add_pending_approval_status` for the enum value, `20260817080800_update_slot_index_for_pending_approval` for the partial unique index — see Gotchas below for why they're split)
+  - [x] `lib/bookings.ts` — pricing table (30/60/120/180 min → ₹199/349/649/899, matching the prototype exactly), call-code generator (`JUM-XXXXXX`, matching the prototype's charset), `createBookingRequest` (validates against live availability, find-or-create user, 15-min approval window), `approveBooking` (→ `TEMPORARILY_HELD`, 5-min payment window), `declineBooking`, `confirmBooking` (→ `CONFIRMED` — this is the exact seam Phase 4's Razorpay webhook will call once it exists), `expireStaleHolds`, `listPendingApprovals`
+  - [x] `lib/availability.ts` updated so `PENDING_APPROVAL` (like `TEMPORARILY_HELD`) blocks a slot only while its window hasn't expired
+  - [x] API routes: `POST /api/bookings` (public), `POST /api/bookings/:id/approve`, `/decline`, `/confirm`, `GET /api/bookings/pending`, `POST /api/bookings/expire-stale` (all four admin ones gated by `lib/admin-auth.ts` checking an `x-admin-key` header against `ADMIN_API_KEY` — a deliberately minimal stand-in for Phase 7's real admin auth, not a placeholder to forget about)
+  - [x] `scripts/test-bookings.ts` — 20/20 checks pass; also smoke-tested the full HTTP flow (create → pending list → approve → confirm, plus the 401 on a missing admin key) against the dev server
+  - [ ] **Known gap, not yet solved:** there is no real-time notification when a new request comes in — `GET /api/bookings/pending` has to be checked manually/polled until Phase 5 (Resend/Twilio) exists. Don't treat "JUM is notified instantly" as delivered yet.
+  - [ ] Not yet done: cancellation endpoints (`CUSTOMER_CANCELLED`/`JUM_CANCELLED`), and the scheduled trigger that's supposed to call `expire-stale` automatically (needs the Azure Function from the deploy step)
 - [ ] **Phase 4** — Real payment (Razorpay). Not started.
 - [ ] **Phase 5** — Notifications (Resend + Twilio). Not started.
 - [ ] **Phase 6** — Real calling (Daily.co). Not started.
@@ -61,13 +69,15 @@ The full phased roadmap (8 phases + deploy step, each tagged "you do this" vs "I
   - `PrismaClient` **requires an explicit driver adapter** — it no longer reads `DATABASE_URL` implicitly. See `lib/prisma.ts` for the working pattern (`@prisma/adapter-pg` + `PrismaPg`).
   - DB connection URL lives in `prisma.config.ts` (via `dotenv`), not directly in `schema.prisma`'s datasource block.
   - Standalone scripts (outside Next's own dev server) don't auto-load `.env` — run them with `npx tsx -r dotenv/config <script>`.
-- **`.env` contains the real Neon connection string already** (gitignored, not committed — `.env.example` is the tracked template). No need to re-ask the user for it in a fresh session; just confirm `jum-app/.env` still exists and has a valid `DATABASE_URL`.
+- **`.env` contains the real Neon connection string already** (gitignored, not committed — `.env.example` is the tracked template). No need to re-ask the user for it in a fresh session; just confirm `jum-app/.env` still exists and has a valid `DATABASE_URL`. It now also has `ADMIN_API_KEY` (generated Phase 3, real random value already in place).
+- **Postgres won't let a newly added enum value be used in the same transaction that added it.** Adding `PENDING_APPROVAL` to `BookingStatus` and then referencing it in the partial unique index's `WHERE` clause had to be two separate migrations (run via two separate `prisma migrate dev` invocations), not one hand-edited file — combining them fails. Also: after hand-writing a migration folder (rather than letting `prisma migrate dev` generate it), remember to run `npx prisma generate` — `migrate dev` regenerates the client for migrations *it* creates, but picked up our hand-written folder as "apply pending migrations" and skipped regen, leaving the client stale until generated explicitly.
+- **`prisma.config.ts`'s `dotenv/config` import doesn't reach plain `node -e` one-liners or `.mjs` files run outside `tsx`** — stick to `npx tsx -r dotenv/config <script>.ts` for one-off DB scripts, same as the existing test scripts, rather than improvising inline `node -e`.
 - The `jum-app` folder name was deliberate — the parent folder `chandu jum` has a space in it, which breaks npm package naming, hence scaffolding into a subfolder.
 
 ## Immediate next step (where this session paused)
 
-Phase 2's core availability engine is done (see above). Two options are on the table for next session, user hasn't picked yet:
-1. Build Phase 3 (real booking system / API routes using the DB slot-lock constraint + the new availability engine together — hold a slot, confirm it, expire stale holds), continuing backend work locally, **or**
+Phase 2 (availability) and Phase 3's core booking mechanics (see above) are both done. Two options are on the table for next session, user hasn't picked yet:
+1. Build Phase 4 (real payment — Razorpay), which plugs into the exact seam already built for it (`confirmBooking()` in `lib/bookings.ts`, currently called manually/by admin key — Phase 4 replaces that trigger with a real webhook), **or**
 2. Do the Azure "hello world" deploy validation first (needs Azure account + GitHub repo created by the user first)
 
-Ask the user which they'd like before proceeding.
+Worth raising with the user regardless of which is picked: Phase 3 left a known gap (no real-time "new request" notification — see Phase 3 status above) and no cancellation endpoints yet. Ask the user which they'd like before proceeding.
