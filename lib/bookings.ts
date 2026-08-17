@@ -15,19 +15,14 @@
 
 import { prisma } from "./prisma";
 import { getAvailableStartTimes } from "./availability";
+import { DURATION_PRICING_INR } from "./pricing";
 import { BookingStatus, PaymentStatus, type CallMethod } from "../app/generated/prisma/client";
 import type { Booking } from "../app/generated/prisma/client";
 
+export { DURATION_PRICING_INR } from "./pricing";
+
 export const APPROVAL_WINDOW_MINUTES = 15; // time JUM has to accept/decline a request
 export const PAYMENT_HOLD_MINUTES = 5; // time the customer has to pay once approved
-
-// Matches the prototype's four duration options exactly (dur.30/60/120/180).
-export const DURATION_PRICING_INR: Record<number, number> = {
-  30: 199,
-  60: 349,
-  120: 649,
-  180: 899,
-};
 
 export class BookingError extends Error {}
 export class SlotUnavailableError extends BookingError {}
