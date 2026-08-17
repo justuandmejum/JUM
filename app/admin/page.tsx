@@ -48,6 +48,7 @@ export default function AdminDashboardPage() {
   const [upcoming, setUpcoming] = useState<UpcomingBooking[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actingOn, setActingOn] = useState<string | null>(null);
+  const [callbackSent, setCallbackSent] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -101,6 +102,24 @@ export default function AdminDashboardPage() {
         return;
       }
       refresh();
+    } catch {
+      setActionError("Network error. Please try again.");
+    } finally {
+      setActingOn(null);
+    }
+  }
+
+  async function sendCallback(bookingId: string) {
+    setActingOn(bookingId);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/call/callback`, { method: "POST", headers: { "x-csrf-token": csrfToken ?? "" } });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error ?? "Could not send a callback for this session.");
+        return;
+      }
+      setCallbackSent((prev) => ({ ...prev, [bookingId]: true }));
     } catch {
       setActionError("Network error. Please try again.");
     } finally {
@@ -195,9 +214,21 @@ export default function AdminDashboardPage() {
                 <span>
                   <b>{formatWhen(b.date, b.startTime)}</b> · {b.duration} min · {b.callMethod} · {b.user.displayName} · code {b.callCode}
                 </span>
-                <button className="btn" disabled={actingOn === b.id} onClick={() => cancelSession(b.id)}>
-                  Cancel
-                </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {b.callMethod === "JUM" && (
+                    <>
+                      <Link className="btn" href={`/admin/call/${b.id}`}>
+                        Join Call
+                      </Link>
+                      <button className="btn" disabled={actingOn === b.id || callbackSent[b.id]} onClick={() => sendCallback(b.id)}>
+                        {callbackSent[b.id] ? "Callback sent" : "Send Callback"}
+                      </button>
+                    </>
+                  )}
+                  <button className="btn" disabled={actingOn === b.id} onClick={() => cancelSession(b.id)}>
+                    Cancel
+                  </button>
+                </div>
               </div>
             ))}
           </div>

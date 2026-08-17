@@ -77,6 +77,19 @@ export function ConfirmedPageClient({ bookingId }: { bookingId: string }) {
             <p>{t("sent.flow")}</p>
           </div>
 
+          {isConfirmed && !isCancelled && booking?.callMethod === "JUM" && (
+            <div className="panel" style={{ maxWidth: 480, margin: "22px auto", textAlign: "center" }}>
+              <p style={{ margin: "0 0 14px" }}>{t("sent.linkJUM")}</p>
+              <Link className="btn primary" href={`/book/${bookingId}/call`}>
+                {t("call.joinBtn")}
+              </Link>
+            </div>
+          )}
+
+          {isConfirmed && !isCancelled && booking && booking.callMethod !== "JUM" && (
+            <p className="lead">{t("sent.linkEmail").replace("{platform}", booking.callMethod).replace("{email}", t("sent.yourEmail"))}</p>
+          )}
+
           {isConfirmed && !isCancelled && (
             <div className="panel" style={{ maxWidth: 480, margin: "22px auto" }}>
               {!confirming ? (

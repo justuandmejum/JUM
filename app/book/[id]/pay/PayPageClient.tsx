@@ -8,25 +8,7 @@ import { Header } from "../../../components/Header";
 import { Footer } from "../../../components/Footer";
 import { useLanguage } from "../../../../lib/i18n/LanguageProvider";
 import { useBookingStatus } from "../../../../lib/i18n/useBookingStatus";
-
-interface RazorpayCheckoutOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => void;
-  prefill?: { email?: string; contact?: string };
-  theme?: { color?: string };
-  modal?: { ondismiss?: () => void };
-}
-
-declare global {
-  interface Window {
-    Razorpay: new (options: RazorpayCheckoutOptions) => { open: () => void };
-  }
-}
+import "../../../../lib/razorpayCheckout";
 
 interface OrderInfo {
   orderId: string;

@@ -9,6 +9,8 @@
 import { prisma } from "./prisma";
 import { createOrder, fetchPayment, verifyPaymentSignature, verifyWebhookSignature } from "./razorpay";
 import { confirmBookingIfPending, BookingError, InvalidBookingStateError } from "./bookings";
+import { applyExtension } from "./calling";
+import { minutesForExtensionAmount } from "./pricing";
 import { BookingStatus, PaymentRecordStatus, PaymentType, PaymentMethod } from "../app/generated/prisma/enums";
 import type { Payment } from "../app/generated/prisma/client";
 
@@ -110,35 +112,67 @@ export interface VerifyPaymentInput {
   razorpaySignature: string;
 }
 
-/** The client-side (Checkout success handler) confirmation path. */
-export async function verifyAndConfirmPayment(bookingId: string, input: VerifyPaymentInput) {
-  const payment = await prisma.payment.findFirst({
-    where: { bookingId, status: PaymentRecordStatus.PENDING },
-    orderBy: { createdAt: "desc" },
-  });
-  if (!payment?.gatewayOrderId) {
-    throw new BookingError(`Booking ${bookingId} has no pending payment to verify.`);
+/** Signature-verifies a Razorpay order against the Payment row it belongs
+ * to (looked up by gatewayOrderId, which is unique per order — donations
+ * have no bookingId to key off, so this is the one lookup that works for
+ * every PaymentType) and marks it SUCCESSFUL if it wasn't already. Shared
+ * by every client-verify path (verifyAndConfirmPayment and
+ * verifyAndApplyExtensionPayment below, lib/donations.ts's
+ * verifyDonationPayment) and effectively duplicated by the webhook below,
+ * since either can arrive first. */
+export async function verifyAndMarkPaymentSuccessful(
+  expectedType: PaymentType,
+  input: VerifyPaymentInput
+): Promise<{ payment: Payment; alreadyProcessed: boolean }> {
+  const payment = await prisma.payment.findFirst({ where: { gatewayOrderId: input.razorpayOrderId } });
+  if (!payment) throw new BookingError(`No payment found for order ${input.razorpayOrderId}.`);
+  if (payment.type !== expectedType) {
+    throw new BookingError(`Order ${input.razorpayOrderId} is not a ${expectedType.toLowerCase()} payment.`);
   }
-  if (payment.gatewayOrderId !== input.razorpayOrderId) {
-    throw new BookingError(`Order id mismatch for booking ${bookingId}.`);
-  }
-  if (!verifyPaymentSignature(payment.gatewayOrderId, input.razorpayPaymentId, input.razorpaySignature)) {
+  if (!verifyPaymentSignature(input.razorpayOrderId, input.razorpayPaymentId, input.razorpaySignature)) {
     throw new BookingError("Invalid payment signature.");
   }
 
-  const method = await fetchPayment(input.razorpayPaymentId)
-    .then((p) => mapRazorpayMethod(p.method))
-    .catch(() => null); // best-effort — the payment is already verified regardless
+  const alreadyProcessed = payment.status === PaymentRecordStatus.SUCCESSFUL;
+  if (!alreadyProcessed) {
+    const method = await fetchPayment(input.razorpayPaymentId)
+      .then((p) => mapRazorpayMethod(p.method))
+      .catch(() => null); // best-effort — the payment is already verified regardless
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: PaymentRecordStatus.SUCCESSFUL, gatewayPaymentId: input.razorpayPaymentId, method: method ?? undefined },
+    });
+  }
+  return { payment, alreadyProcessed };
+}
 
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: { status: PaymentRecordStatus.SUCCESSFUL, gatewayPaymentId: input.razorpayPaymentId, method: method ?? undefined },
-  });
-
+/** The client-side (Checkout success handler) confirmation path for a
+ * booking's session payment. */
+export async function verifyAndConfirmPayment(bookingId: string, input: VerifyPaymentInput) {
+  const { payment } = await verifyAndMarkPaymentSuccessful(PaymentType.SESSION, input);
+  if (payment.bookingId !== bookingId) {
+    throw new BookingError(`Order ${input.razorpayOrderId} does not belong to booking ${bookingId}.`);
+  }
   return confirmBookingIfPending(bookingId);
 }
 
-/** The async, authoritative confirmation path — Razorpay calls this. */
+/** The client-side confirmation path for a mid-call extension payment —
+ * mirrors verifyAndConfirmPayment above. `minutes` comes from the same
+ * request that created the order (lib/calling.ts's initiateExtensionOrder
+ * already validated it against real availability at that point), so this
+ * just needs to guard against double-applying if the webhook already beat
+ * it to it. */
+export async function verifyAndApplyExtensionPayment(bookingId: string, minutes: number, input: VerifyPaymentInput): Promise<void> {
+  const { payment, alreadyProcessed } = await verifyAndMarkPaymentSuccessful(PaymentType.EXTENSION, input);
+  if (payment.bookingId !== bookingId) {
+    throw new BookingError(`Order ${input.razorpayOrderId} does not belong to booking ${bookingId}.`);
+  }
+  if (!alreadyProcessed) await applyExtension(bookingId, minutes);
+}
+
+/** The async, authoritative confirmation path — Razorpay calls this.
+ * Branches on Payment.type since SESSION, EXTENSION, and DONATION each
+ * need a different follow-up once the money has actually landed. */
 export async function handleRazorpayWebhook(rawBody: string, signature: string | null): Promise<{ handled: boolean }> {
   if (!signature || !verifyWebhookSignature(rawBody, signature)) {
     throw new BookingError("Invalid webhook signature.");
@@ -158,10 +192,11 @@ export async function handleRazorpayWebhook(rawBody: string, signature: string |
     where: { gatewayOrderId: entity.order_id },
     orderBy: { createdAt: "desc" },
   });
-  if (!payment || !payment.bookingId) return { handled: false };
+  if (!payment) return { handled: false };
 
   if (event.event === "payment.captured") {
-    if (payment.status !== PaymentRecordStatus.SUCCESSFUL) {
+    const alreadyProcessed = payment.status === PaymentRecordStatus.SUCCESSFUL;
+    if (!alreadyProcessed) {
       await prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -170,8 +205,18 @@ export async function handleRazorpayWebhook(rawBody: string, signature: string |
           method: mapRazorpayMethod(entity.method) ?? undefined,
         },
       });
+
+      // Side effects only run the first time a payment is marked
+      // successful — confirmBookingIfPending is safe to re-run, but
+      // applyExtension is not (it would double-extend the room).
+      if (payment.bookingId && payment.type === PaymentType.SESSION) {
+        await confirmBookingIfPending(payment.bookingId);
+      } else if (payment.bookingId && payment.type === PaymentType.EXTENSION) {
+        const minutes = minutesForExtensionAmount(payment.amountInr);
+        if (minutes) await applyExtension(payment.bookingId, minutes);
+      }
+      // DONATION: nothing further to do — marking it SUCCESSFUL above is the whole effect.
     }
-    await confirmBookingIfPending(payment.bookingId);
   } else if (event.event === "payment.failed") {
     if (payment.status === PaymentRecordStatus.PENDING) {
       await prisma.payment.update({ where: { id: payment.id }, data: { status: PaymentRecordStatus.FAILED } });

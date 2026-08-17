@@ -19,15 +19,24 @@ import type { NextConfig } from "next";
 // checkout.razorpay.com: Checkout.js loads a second script of its own
 // (a risk-detection bundle from cdn.razorpay.com) — confirmed by watching
 // the actual CSP violation in the browser console, not guessed in advance.
+//
+// Daily.co (Phase 6 calling): daily-js itself is bundled via npm, not
+// loaded from a CDN, so script-src needs no change — but the video call
+// runs in an embedded iframe pointing at *.daily.co (frame-src), makes its
+// own API/WebSocket calls (connect-src, including wss: for the signaling
+// socket), loads participant avatars (img-src), and spins up a web worker
+// from a blob: URL for on-device processing (worker-src, which otherwise
+// falls back to script-src and wouldn't allow blob:).
 const isDev = process.env.NODE_ENV === "development";
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' https://*.razorpay.com${isDev ? " 'unsafe-eval'" : ""}`, // unsafe-eval: React dev-mode debugging only, never used in production
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https://*.razorpay.com",
-  "connect-src 'self' https://*.razorpay.com",
-  "frame-src https://*.razorpay.com",
+  "img-src 'self' data: https://*.razorpay.com https://*.daily.co",
+  "connect-src 'self' https://*.razorpay.com https://*.daily.co wss://*.daily.co",
+  "frame-src https://*.razorpay.com https://*.daily.co",
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
