@@ -1,10 +1,18 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { verifyPassword, createSessionToken, buildSessionCookieHeader } from "../../../../lib/admin-session";
+import { checkRateLimit, getClientIp, tooManyRequestsResponse } from "../../../../lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
+// Brute-force protection. The real defense is the password's own entropy,
+// but this is cheap defense-in-depth on top of that.
+const RATE_LIMIT = { maxAttempts: 5, windowMs: 15 * 60 * 1000 };
+
 export async function POST(request: NextRequest) {
+  const allowed = await checkRateLimit(`admin-login:${getClientIp(request)}`, RATE_LIMIT);
+  if (!allowed) return tooManyRequestsResponse(300);
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();

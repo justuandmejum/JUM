@@ -266,3 +266,19 @@ model Admin {
 
   @@map("admins")
 }
+
+// ---------------------------------------------------------------------------
+// Rate limiting — a plain DB-backed sliding window (see lib/rateLimit.ts).
+// Deliberately not in-memory: serverless/hybrid hosting can run multiple
+// instances that wouldn't share in-memory state, so a shared store is
+// needed even at this small a scale.
+// ---------------------------------------------------------------------------
+
+model RateLimitHit {
+  id        String   @id @default(uuid())
+  key       String // e.g. "booking:<ip>" or "admin-login:<ip>"
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@map("rate_limit_hits")
+}

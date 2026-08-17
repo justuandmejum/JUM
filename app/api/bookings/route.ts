@@ -1,13 +1,25 @@
 import type { NextRequest } from "next/server";
 import { createBookingRequest, BookingError, SlotUnavailableError, DURATION_PRICING_INR } from "../../../lib/bookings";
 import { CallMethod } from "../../../app/generated/prisma/enums";
+import { checkRateLimit, getClientIp, tooManyRequestsResponse } from "../../../lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const CALL_METHODS = new Set(Object.values(CallMethod));
 
+// A PENDING_APPROVAL booking occupies its slot in the DB for 15 minutes
+// (see lib/bookings.ts APPROVAL_WINDOW_MINUTES) — without a limit here,
+// scripted requests could hold every open slot on the calendar without
+// ever intending to pay. 5 per 10 minutes per IP allows genuine retries
+// (picking a different time after a slot turns out taken) without
+// allowing calendar-griefing.
+const RATE_LIMIT = { maxAttempts: 5, windowMs: 10 * 60 * 1000 };
+
 export async function POST(request: NextRequest) {
+  const allowed = await checkRateLimit(`booking:${getClientIp(request)}`, RATE_LIMIT);
+  if (!allowed) return tooManyRequestsResponse(60);
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();

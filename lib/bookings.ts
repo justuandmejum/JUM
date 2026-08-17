@@ -139,9 +139,13 @@ export async function declineBooking(id: string): Promise<Booking> {
   });
 }
 
-/** Marks a booking paid and confirmed. This is the seam Phase 4's Razorpay
- * webhook handler will call on a successful payment — for now it's a
- * manual/testing stand-in since no payment gateway is wired up yet. */
+/** Marks a booking paid and confirmed, strictly (throws if the payment
+ * window already expired). Real payment confirmation goes through
+ * confirmBookingIfPending() below via lib/payments.ts instead — this
+ * stricter variant exists for test scripts, not exposed over HTTP
+ * (deliberately: an API route here would let anyone with admin access
+ * confirm a booking with no real payment, see PROJECT_STATUS.md's
+ * security review). */
 export async function confirmBooking(id: string): Promise<Booking> {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) throw new BookingError(`Booking ${id} not found.`);
