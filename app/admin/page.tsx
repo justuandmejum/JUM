@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatTimeOfDay, formatFullDateLabel } from "../../lib/i18n/bookingFormat";
 
 interface AdminInfo {
@@ -147,6 +148,9 @@ export default function AdminDashboardPage() {
             <h2 style={{ margin: "4px 0" }}>Dashboard</h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Link className="btn" href="/admin/availability">
+              Availability
+            </Link>
             <span className="fine" style={{ color: "#3f4c5e" }}>
               {admin?.email}
             </span>
