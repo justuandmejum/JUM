@@ -45,3 +45,4 @@ next-env.d.ts
 
 # local-only secrets handed to the owner; never commit
 admin-password.txt
+cron-secret.txt
