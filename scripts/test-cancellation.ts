@@ -25,7 +25,14 @@ import { createBookingRequest, approveBooking } from "../lib/bookings";
 import { cancelByCustomer, cancelByAdmin, refundPercentForHoursNotice } from "../lib/cancellation";
 import { BookingStatus, PaymentRecordStatus } from "../app/generated/prisma/enums";
 
-const TEST_DATE = "2026-09-20"; // a Sunday, far enough out to not collide with real bookings
+// A Sunday at least 60 days out, computed (not hardcoded) so this test can't go
+// stale as real time passes — far enough out to not collide with real bookings.
+const TEST_DATE = (() => {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 60);
+  d.setUTCDate(d.getUTCDate() + ((7 - d.getUTCDay()) % 7)); // advance to Sunday
+  return d.toISOString().slice(0, 10);
+})();
 const TEST_EMAIL = `cancel-test-${Date.now()}@example.com`;
 
 let pass = 0;
