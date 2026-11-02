@@ -212,11 +212,24 @@ Things that bit during the first deploy (keep in mind for future changes):
 - **Clean checkouts have no generated Prisma client**, so `build` runs `prisma generate` first, and `lib/prisma.ts` creates the client lazily (the build runs without secrets).
 - Environment variables set in the portal take a minute or two to reach the running app. Each needs a *value* — a name alone silently counts as unset. `ADMIN_API_KEY` is optional (header-based fallback auth only) and is not set.
 
-Still to do after deploy:
-1. Register the Razorpay webhook (Settings → Webhooks): `https://lively-grass-0137fc300.3.azurestaticapps.net/api/webhooks/razorpay`, same `RAZORPAY_WEBHOOK_SECRET` as in Azure.
-2. Admin login on the live site, then one real end-to-end test booking.
-3. Azure Function timer for `/api/bookings/expire-stale` (still not created).
-4. Custom domain `justuandme.in`.
+Verified live on 2 Nov 2026 (manual, real browsers, Razorpay test mode):
+- Razorpay webhook registered; live endpoint accepts a correctly signed event (200) and rejects a bad signature (400).
+- Admin login works (password reset via `scripts/seed-admin.ts <email> <password> --reset`).
+- Full booking flow: request → admin approve → pay (use an *Indian* test card, e.g. Visa `4100 2800 0000 1007`; the classic `4111…` card is rejected as international) → confirmed.
+- Video call works both sides (Daily Prebuilt). It first failed with `account-missing-payment-method`: the Daily account needs a payment method on file.
+- Feedback page + tip (donation) payment works.
+
+Bugs found and fixed while testing the live flow:
+- A Daily `error` event used to end the paid session (marking it COMPLETED, blocking a retry) even before the person had joined. Now only errors *after* joining end it; the real error is logged to the console.
+- Razorpay buttons (tip, pay, call-extend) stayed disabled after client-side navigation because `next/script` `onLoad` doesn't re-fire for an already-loaded script. Now uses `onReady`.
+- Feedback page had no way back to the home page; added a Home button.
+
+Still to do:
+1. Delete the test data (booking `356183c8…`, its payments/session/feedback/tip orders, and the old BOOKING_FAILED test row).
+2. Azure Function timer for `/api/bookings/expire-stale` (still not created).
+3. Custom domain `justuandme.in`.
+4. Phase 5 notifications (email/SMS) — no email service exists yet.
+5. Real refunds untested until Razorpay KYC clears; the extend-near-end-of-call prompt not yet observed live.
 
 ## Immediate next step (where this session paused)
 
