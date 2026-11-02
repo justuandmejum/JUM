@@ -96,12 +96,25 @@ export function AdminCallPageClient({ bookingId }: { bookingId: string }) {
         iframeStyle: { width: "100%", height: "480px", border: "0", borderRadius: "18px" },
       });
       callFrameRef.current = frame;
-      frame.on("left-meeting", () => endCallSession());
-      frame.on("error", () => endCallSession());
+      // Only a failure *after* connecting should end (and bill-out) the session.
+      // An error while still joining (denied camera, blocked network...) must not
+      // mark the paid session COMPLETED, or the person could never retry.
+      let joined = false;
+      frame.on("left-meeting", () => {
+        if (joined) endCallSession();
+      });
+      frame.on("error", (e) => {
+        console.error("Daily call error", e);
+        if (joined) endCallSession();
+      });
 
       await frame.join({ url: data.url, token: data.token });
+      joined = true;
       setPhase("in-call");
-    } catch {
+    } catch (err) {
+      console.error("Could not join the call", err);
+      callFrameRef.current?.destroy();
+      callFrameRef.current = null;
       setJoinError("Could not join the call.");
       setPhase("ready");
     }
@@ -170,7 +183,7 @@ export function AdminCallPageClient({ bookingId }: { bookingId: string }) {
               </div>
             )}
 
-            <div ref={containerRef} style={{ display: phase === "in-call" ? "block" : "none", marginTop: 18, maxWidth: 640 }} />
+            <div ref={containerRef} style={{ display: phase === "in-call" || phase === "joining" ? "block" : "none", marginTop: 18, maxWidth: 640 }} />
 
             {phase === "in-call" && (
               <div className="panel callpanel" style={{ maxWidth: 480 }}>
