@@ -202,6 +202,22 @@ Closes the last major feature gap — real Daily.co video calling (JUM's own cal
 - **A test script's cleanup must run in `finally`, not just at the end of the happy path.** `test-calling.ts`'s first run crashed on the bug above before reaching its cleanup step, leaving orphaned test bookings in the real DB — which then silently skewed a *second* run's extension-tier math (a stray leftover booking pulled the "next free slot" boundary in early), producing a confusing failure that looked like a math bug in `computeExtensionOptions` but was actually stale data from a previous failed run. Wrap the whole test body in `try { ... } finally { await cleanup(); }`.
 - **This session's browser tool needed `node.exe` invoked directly, not `npm`/`npx`, to start the dev server via `preview_start`.** Neither `npm` nor `npx` were resolvable on that tool's PATH (a different PATH than the one used for the `Bash`/`PowerShell` tools, where `C:\Program Files\nodejs` had to be prepended per-command anyway — see the very first gotcha above). The working `.claude/launch.json` (at the repo's *parent* directory, `C:\Users\saiku\chandu jum\`, not inside `jum-app`) points `runtimeExecutable` straight at `C:\Program Files\nodejs\node.exe` with `runtimeArgs: ["jum-app/node_modules/next/dist/bin/next", "dev", "jum-app"]` — bypassing `npm`/`npx` entirely by calling Next's actual CLI entry point with the app directory as an explicit argument.
 
+## Deployed (live on Azure Static Web Apps)
+
+**Live at https://lively-grass-0137fc300.3.azurestaticapps.net** (Free plan, East Asia region, deploys automatically from `master` via the generated GitHub Actions workflow). Verified live: pages 200, `/api/availability` reads the real Neon DB, admin/protected endpoints return 401 without a session, bad admin login rejected, Razorpay webhook rejects unsigned requests.
+
+Things that bit during the first deploy (keep in mind for future changes):
+- **Node must be 22.** Azure's Oryx rejects Node 24; `package.json` pins `engines.node: "22.x"` and the workflow has an `actions/setup-node` (22) step.
+- **App size limit is 250 MB** for hybrid Next.js (full `node_modules` was ~780 MB). `next.config.ts` uses `output: "standalone"` (~32 MB) and the build script ends with `scripts/copy-standalone-assets.mjs` (copies `.next/static` and `public/` into the standalone folder).
+- **Clean checkouts have no generated Prisma client**, so `build` runs `prisma generate` first, and `lib/prisma.ts` creates the client lazily (the build runs without secrets).
+- Environment variables set in the portal take a minute or two to reach the running app. Each needs a *value* — a name alone silently counts as unset. `ADMIN_API_KEY` is optional (header-based fallback auth only) and is not set.
+
+Still to do after deploy:
+1. Register the Razorpay webhook (Settings → Webhooks): `https://lively-grass-0137fc300.3.azurestaticapps.net/api/webhooks/razorpay`, same `RAZORPAY_WEBHOOK_SECRET` as in Azure.
+2. Admin login on the live site, then one real end-to-end test booking.
+3. Azure Function timer for `/api/bookings/expire-stale` (still not created).
+4. Custom domain `justuandme.in`.
+
 ## Immediate next step (where this session paused)
 
 Backend (Phases 2–4), the customer-facing frontend, admin dashboard (Phase 7, including availability editing), cancellation/refunds, a first security/privacy pass (Phase 8), and now real calling/extensions/feedback/donations (Phase 6) are all done and tested. GitHub repo exists and this code is pushed (`github.com/justuandmejum/JUM`, `origin/master` tracked). **Everything now converges on one blocker: the user's Azure account, currently under identity review.** Once it clears:
