@@ -43,6 +43,9 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Azure Static Web Apps caps a hybrid Next.js app at 250 MB. "standalone" traces
+  // only the files the server really needs, instead of shipping all of node_modules.
+  output: "standalone",
   async headers() {
     return [
       {
