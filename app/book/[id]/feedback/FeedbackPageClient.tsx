@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Script from "next/script";
 import { Header } from "../../../components/Header";
 import { Footer } from "../../../components/Footer";
@@ -134,7 +135,7 @@ export function FeedbackPageClient({ bookingId }: { bookingId: string }) {
 
   return (
     <>
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" onLoad={() => setScriptReady(true)} />
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" onReady={() => setScriptReady(true)} />
       <Header />
       <section>
         <div className="wrap center">
@@ -211,6 +212,10 @@ export function FeedbackPageClient({ bookingId }: { bookingId: string }) {
               </>
             )}
           </div>
+
+          <Link href="/" className="btn" style={{ marginTop: 18 }}>
+            {t("nav.home")}
+          </Link>
         </div>
       </section>
       <Footer />

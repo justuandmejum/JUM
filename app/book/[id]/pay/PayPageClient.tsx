@@ -114,7 +114,7 @@ export function PayPageClient({ bookingId }: { bookingId: string }) {
 
   return (
     <>
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" onLoad={() => setScriptReady(true)} />
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" onReady={() => setScriptReady(true)} />
       <Header />
       <section>
         <div className="wrap center" style={{ maxWidth: 640 }}>
