@@ -226,11 +226,12 @@ Bugs found and fixed while testing the live flow:
 
 Test data was deleted after the first end-to-end test (DB is clean).
 
+Custom domain (done 3 Nov 2026): `justuandme.in` is registered at GoDaddy, DNS stays at GoDaddy. Records: `A @ → 13.75.93.156` (the SWA `stableInboundIP`; GoDaddy can't ALIAS the apex), `CNAME www → lively-grass-0137fc300.3.azurestaticapps.net`, plus the `TXT @` ownership token Azure generated (leave it). Both hostnames are added under the SWA's Custom domains with free auto-renewing certificates. If the SWA is ever recreated, `stableInboundIP` changes and the A record must be updated. The old `*.azurestaticapps.net` URL still works (the Razorpay webhook may stay on it).
+
 Stale-hold timer: `.github/workflows/expire-stale-holds.yml` (GitHub Actions cron, not an Azure Function — free and no extra Azure resources) POSTs to `/api/bookings/expire-stale` with the `x-admin-key` header. Needs `ADMIN_API_KEY` set as both an Azure environment variable and a GitHub *repository secret* (same value). Verified green on 3 Nov 2026. GitHub runs scheduled jobs far less often than every 5 min and pauses them after 60 days of repo inactivity — fine, since availability already treats expired holds as free; swap to an Azure Function timer only if exact timing matters.
 
 Still to do:
-2. Custom domain `justuandme.in`.
-3. Phase 5 notifications (email/SMS) — no email service exists yet.
+2. Phase 5 notifications (email/SMS) — no email service exists yet. NOTE: the domain has no MX records, so `hello@justuandme.in` (shown on the legal pages) cannot receive mail until email hosting/forwarding is set up.
 5. Real refunds untested until Razorpay KYC clears; the extend-near-end-of-call prompt not yet observed live.
 
 ## Immediate next step (where this session paused)
