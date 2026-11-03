@@ -224,11 +224,13 @@ Bugs found and fixed while testing the live flow:
 - Razorpay buttons (tip, pay, call-extend) stayed disabled after client-side navigation because `next/script` `onLoad` doesn't re-fire for an already-loaded script. Now uses `onReady`.
 - Feedback page had no way back to the home page; added a Home button.
 
+Test data was deleted after the first end-to-end test (DB is clean).
+
+Stale-hold timer: `.github/workflows/expire-stale-holds.yml` (GitHub Actions cron, not an Azure Function — free and no extra Azure resources) POSTs to `/api/bookings/expire-stale` with the `x-admin-key` header. Needs `ADMIN_API_KEY` set as both an Azure environment variable and a GitHub *repository secret* (same value). Verified green on 3 Nov 2026. GitHub runs scheduled jobs far less often than every 5 min and pauses them after 60 days of repo inactivity — fine, since availability already treats expired holds as free; swap to an Azure Function timer only if exact timing matters.
+
 Still to do:
-1. Delete the test data (booking `356183c8…`, its payments/session/feedback/tip orders, and the old BOOKING_FAILED test row).
-2. Azure Function timer for `/api/bookings/expire-stale` (still not created).
-3. Custom domain `justuandme.in`.
-4. Phase 5 notifications (email/SMS) — no email service exists yet.
+2. Custom domain `justuandme.in`.
+3. Phase 5 notifications (email/SMS) — no email service exists yet.
 5. Real refunds untested until Razorpay KYC clears; the extend-near-end-of-call prompt not yet observed live.
 
 ## Immediate next step (where this session paused)
