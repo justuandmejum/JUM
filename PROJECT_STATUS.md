@@ -233,7 +233,8 @@ Stale-hold timer: `.github/workflows/expire-stale-holds.yml` (GitHub Actions cro
 Still to do:
 2. Phase 5 notifications (email/SMS) — no email service exists yet. NOTE: the domain has no MX records, so `hello@justuandme.in` (shown on the legal pages) cannot receive mail until email hosting/forwarding is set up.
 5. The extend-near-end-of-call prompt not yet observed live.
-6. Switch Razorpay to LIVE: live API keys + a separate live-mode webhook, update `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` in Azure only (keep test keys in local `.env`), then one small real payment + refund.
+
+**Razorpay is LIVE (4 Nov 2026).** Website `justuandme.in` approved by Razorpay; live key pair + a separate live-mode webhook (`https://justuandme.in/api/webhooks/razorpay`) configured in Azure env vars only — local `.env` intentionally keeps the TEST keys so local runs can never charge real money. Verified with one real ₹199 UPI payment: captured, then customer-cancelled and fully refunded (`refund_status: full`, `processed`). Live Key Secret cannot be re-shown by Razorpay; if lost, regenerate in Razorpay (Live mode) and update the Azure env vars. Note: Razorpay asks that the business name on the site/policy pages matches what was submitted.
 
 Razorpay KYC cleared (individual account, activated). Verified 3-4 Nov 2026 in TEST mode: customer cancel (>24h) and admin cancel both create a real full refund at Razorpay (`refund_status: full`, `processed`) and the Payment row flips to REFUNDED. The old "refund creation blocked by pending KYC" notes elsewhere in this file / `scripts/test-cancellation.ts` are now obsolete.
 
