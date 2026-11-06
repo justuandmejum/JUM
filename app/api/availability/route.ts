@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getAvailableStartTimes, SLOT_STEP_MINUTES } from "../../../lib/availability";
+import { getStartTimeOptions, SLOT_STEP_MINUTES } from "../../../lib/availability";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const availableStartTimes = await getAvailableStartTimes(date, duration);
-    return Response.json({ date, duration, availableStartTimes });
+    const { available, booked } = await getStartTimeOptions(date, duration);
+    return Response.json({ date, duration, availableStartTimes: available, bookedStartTimes: booked });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return Response.json({ error: message }, { status: 400 });

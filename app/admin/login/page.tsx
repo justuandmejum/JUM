@@ -35,10 +35,11 @@ export default function AdminLoginPage() {
 
   return (
     <section>
-      <div className="wrap center" style={{ maxWidth: 420 }}>
-        <div className="eyebrow">JUM Admin</div>
-        <h2>Sign in</h2>
-        <div className="panel" style={{ textAlign: "left" }}>
+      <div className="wrap center adm-login-wrap">
+        <div className="adm-login-badge adm-rise">JUM</div>
+        <div className="adm-eyebrow adm-rise" style={{ animationDelay: "60ms" }}>JUM Admin</div>
+        <h1 className="adm-title adm-rise" style={{ animationDelay: "100ms" }}>Welcome back</h1>
+        <div className="panel adm-login adm-rise" style={{ textAlign: "left", animationDelay: "160ms" }}>
           <form className="formrow" onSubmit={handleSubmit}>
             <label>
               <span>Email</span>

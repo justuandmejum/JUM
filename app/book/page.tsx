@@ -28,6 +28,7 @@ export default function BookPage() {
   const [duration, setDuration] = useState<number | null>(null);
 
   const [availableTimes, setAvailableTimes] = useState<number[] | null>(null);
+  const [bookedTimes, setBookedTimes] = useState<number[]>([]);
   const [loadingTimes, setLoadingTimes] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
 
@@ -47,6 +48,7 @@ export default function BookPage() {
   useEffect(() => {
     if (!selectedDay || !duration) {
       setAvailableTimes(null);
+      setBookedTimes([]);
       return;
     }
     let cancelled = false;
@@ -55,7 +57,10 @@ export default function BookPage() {
     fetch(`/api/availability?date=${selectedDay.dateStr}&duration=${duration}`)
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setAvailableTimes(data.availableStartTimes ?? []);
+        if (!cancelled) {
+          setAvailableTimes(data.availableStartTimes ?? []);
+          setBookedTimes(data.bookedStartTimes ?? []);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingTimes(false);
@@ -110,6 +115,7 @@ export default function BookPage() {
           // Slot was taken between selection and submit — refresh times.
           setStartTime(null);
           setAvailableTimes((prev) => (prev ?? []).filter((t) => t !== startTime));
+          if (startTime !== null) setBookedTimes((prev) => [...prev, startTime]);
         }
         return;
       }
@@ -178,17 +184,26 @@ export default function BookPage() {
                 <span>{t("booking.selectDateFirst")}</span>
               ) : loadingTimes ? (
                 <span className="skeleton" style={{ display: "inline-block", width: 120, height: 20 }} />
-              ) : availableTimes && availableTimes.length > 0 ? (
-                availableTimes.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    className={startTime === m ? "active" : ""}
-                    onClick={() => setStartTime(m)}
-                  >
-                    {formatTimeOfDay(m, lang)}
-                  </button>
-                ))
+              ) : availableTimes && (availableTimes.length > 0 || bookedTimes.length > 0) ? (
+                [...availableTimes.map((m) => ({ m, booked: false })), ...bookedTimes.map((m) => ({ m, booked: true }))]
+                  .sort((a, b) => a.m - b.m)
+                  .map(({ m, booked }) =>
+                    booked ? (
+                      <button key={m} type="button" className="booked" disabled aria-label={`${formatTimeOfDay(m, lang)} — ${t("booking.slotBooked")}`}>
+                        <span className="booked-time">{formatTimeOfDay(m, lang)}</span>
+                        <small>{t("booking.slotBooked")}</small>
+                      </button>
+                    ) : (
+                      <button
+                        key={m}
+                        type="button"
+                        className={startTime === m ? "active" : ""}
+                        onClick={() => setStartTime(m)}
+                      >
+                        {formatTimeOfDay(m, lang)}
+                      </button>
+                    )
+                  )
               ) : (
                 <span>{t("declined.lead")}</span>
               )}

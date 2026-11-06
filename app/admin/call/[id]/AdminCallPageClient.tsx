@@ -144,13 +144,13 @@ export function AdminCallPageClient({ bookingId }: { bookingId: string }) {
   return (
     <section>
       <div className="wrap">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div className="adm-head adm-rise">
           <div>
-            <div className="eyebrow">JUM Admin</div>
-            <h2 style={{ margin: "4px 0" }}>Call</h2>
+            <div className="adm-eyebrow">JUM Admin</div>
+            <h1 className="adm-title">Call</h1>
           </div>
-          <Link className="btn" href="/admin">
-            Back to Dashboard
+          <Link className="adm-btn" href="/admin">
+            ← Back to Dashboard
           </Link>
         </div>
 

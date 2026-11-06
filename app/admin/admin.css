@@ -1,0 +1,138 @@
+/* ===================== Admin area (.adm) =====================
+   Loaded only on /admin/* (imported by app/admin/layout.tsx) and scoped under
+   .adm, so the public site is untouched. Pure CSS motion; everything moving is
+   switched off under prefers-reduced-motion at the bottom. */
+.adm{min-height:100vh;position:relative;overflow-x:hidden;color:#16233a;background:radial-gradient(1100px 520px at 12% -8%,#fbe9c3 0%,transparent 60%),radial-gradient(900px 480px at 100% 6%,#dde9f7 0%,transparent 55%),linear-gradient(180deg,#f9f0df 0%,#f4e8d0 100%)}
+.adm:before{content:"";position:fixed;width:520px;height:520px;right:-160px;top:180px;border-radius:50%;background:radial-gradient(circle,#c9a24a33,transparent 68%);filter:blur(10px);animation:admDrift 16s ease-in-out infinite alternate;pointer-events:none;z-index:0}
+.adm>*{position:relative;z-index:1}
+.adm-main{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+.adm section{padding:26px 0 40px}
+.adm .wrap{max-width:none;padding:0;width:100%}
+.adm-page{padding-top:30px}
+
+/* top bar */
+.adm-top{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#0b2346 0%,#102f5c 60%,#173d73 100%);box-shadow:0 8px 24px #0b234633}
+.adm-top:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,#c9a24a,#f1d68a,#c9a24a,transparent);background-size:220% 100%;animation:admShimmer 7s linear infinite}
+.adm-top-inner{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.adm-brand{display:flex;align-items:center;gap:11px;color:#fff;transition:transform .25s}
+.adm-brand:hover{transform:translateY(-1px)}
+.adm-logo{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;border:1.5px solid #c9a24a;color:#e9c875;font:700 15px/1 'Lora',Georgia,serif;letter-spacing:1px;background:#0b2346;box-shadow:0 0 0 0 #c9a24a55;animation:admGlow 4.2s ease-in-out infinite}
+.adm-brand-text{display:grid;line-height:1.15}
+.adm-brand-text b{font-size:15px;font-weight:700}
+.adm-brand-text small{font-size:10.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:#e9c875}
+.adm-nav{display:flex;gap:4px;margin-left:8px}
+.adm-nav a{position:relative;padding:9px 15px;border-radius:999px;color:#cdd9ea;font-weight:700;font-size:14.5px;transition:color .2s,background .2s}
+.adm-nav a:hover{color:#fff;background:#ffffff14}
+.adm-nav a.active{color:#fff;background:#ffffff1f}
+.adm-nav a.active:after{content:"";position:absolute;left:16px;right:16px;bottom:3px;height:2px;border-radius:2px;background:#e9c875;transform-origin:left;animation:admGrow .35s ease both}
+.adm-user{margin-left:auto;display:flex;align-items:center;gap:12px}
+.adm-user-email{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:#cdd9ea}
+.adm-logout{cursor:pointer;border:1px solid #ffffff3d;background:transparent;color:#fff;font-weight:700;font-size:13px;padding:8px 15px;border-radius:999px;transition:background .2s,transform .15s}
+.adm-logout:hover{background:#ffffff1f}
+.adm-logout:active{transform:scale(.96)}
+
+/* headings */
+.adm-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+.adm-eyebrow{text-transform:uppercase;letter-spacing:2.6px;font-size:12px;font-weight:800;color:#b58a2e}
+.adm-title{margin:4px 0 0;font:700 clamp(30px,4.4vw,42px)/1.1 'Lora',Georgia,serif;color:#0f2748}
+.adm-h2{display:flex;align-items:center;gap:10px;margin:38px 0 14px;font:700 22px/1.2 'Lora',Georgia,serif;color:#0f2748}
+.adm-count{display:inline-grid;place-items:center;min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:#102f5c;color:#fff;font:800 13px/1 'Bricolage Grotesque',sans-serif}
+.adm-live{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:#ffffffb8;border:1px solid #e3d6b8;font-size:12.5px;font-weight:800;letter-spacing:.6px;color:#2f6b57;text-transform:uppercase}
+.adm-dot{width:9px;height:9px;border-radius:50%;background:#2f9a6b;box-shadow:0 0 0 0 #2f9a6b88;animation:admPulse 1.8s ease-out infinite}
+.adm-error{margin:0 0 18px;padding:13px 16px;border-radius:14px;border:1.5px solid #b03a2e;background:#fbecec;color:#8a2f2f;font-weight:600;animation:admShake .45s both}
+
+/* stats */
+.adm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.adm-stat{display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;background:#fffaf0;border:1px solid #eadfc4;box-shadow:0 10px 28px #102f5c0f;transition:transform .25s,box-shadow .25s}
+.adm-stat:hover{transform:translateY(-3px);box-shadow:0 16px 34px #102f5c1c}
+.adm-stat-icon{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;flex-shrink:0}
+.tone-gold .adm-stat-icon{background:#f6e7bd;color:#9a6f12}
+.tone-navy .adm-stat-icon{background:#dbe6f5;color:#102f5c}
+.tone-green .adm-stat-icon{background:#d9eee3;color:#2f6b57}
+.adm-stat-num{font:700 34px/1 'Lora',Georgia,serif;color:#0f2748;font-variant-numeric:tabular-nums}
+.adm-stat-label{margin-top:5px;font-size:12.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#7d6c5e}
+.adm-next{background:linear-gradient(135deg,#102f5c,#1a4585);border-color:#102f5c;color:#fff}
+.adm-next .adm-stat-label{color:#e9c875;margin:0 0 6px}
+.adm-next-when{font:700 24px/1.1 'Lora',Georgia,serif}
+.adm-next-sub{margin-top:4px;font-size:14px;font-weight:600;color:#d5e0f1}
+
+/* cards */
+.adm-list{display:grid;gap:14px}
+.adm-card{display:flex;align-items:center;gap:18px;padding:20px 22px;border-radius:22px;background:#fffaf0;border:1px solid #eadfc4;box-shadow:0 10px 28px #102f5c0d;transition:transform .25s,box-shadow .25s,border-color .25s}
+.adm-card:hover{transform:translateY(-3px);box-shadow:0 18px 38px #102f5c1a;border-color:#dcc98f}
+.adm-pending{border-left:5px solid #c9a24a}
+.adm-upcoming{border-left:5px solid #102f5c}
+.adm-avatar{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;flex-shrink:0;color:#fff;font:700 21px/1 'Lora',Georgia,serif;box-shadow:0 6px 14px #0b234633}
+.adm-card-body{flex:1;min-width:0}
+.adm-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.adm-card-top b{font-size:17px}
+.adm-when{margin:3px 0 9px;font-weight:700;color:#3a4a60;font-size:15px}
+.adm-chips{display:flex;flex-wrap:wrap;gap:7px}
+.adm-chip{display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;background:#e9eef7;color:#1d3a66;font-size:12.5px;font-weight:800;letter-spacing:.2px}
+.adm-chip.gold{background:#f6e7bd;color:#7d5a0b}
+.adm-chip.soft{background:#f1e8d2;color:#7d6c5e}
+.adm-fine{margin-top:9px;font-size:13px;font-weight:500;color:#6a7686}
+.adm-note{margin-top:7px;font-size:14px;font-style:italic;color:#555}
+.adm-card-side{display:grid;gap:9px;min-width:230px}
+.adm-timer{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#7d6c5e}
+.adm-timer b{font:700 21px/1 'Lora',Georgia,serif;letter-spacing:0;color:#0f2748;font-variant-numeric:tabular-nums}
+.adm-timer.urgent b{color:#b03a2e;animation:admBlink 1s ease-in-out infinite}
+.adm-bar{height:7px;border-radius:99px;background:#eadfc4;overflow:hidden}
+.adm-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c9a24a,#e9c875);transition:width 1s linear}
+.adm-bar i.urgent{background:linear-gradient(90deg,#b03a2e,#d9695c)}
+.adm-actions{display:flex;gap:8px;flex-wrap:wrap}
+.adm-actions.end{justify-content:flex-end;max-width:360px}
+.adm-flash{animation:admRise .55s cubic-bezier(.2,.7,.2,1) both,admFlash 2.4s ease-out .2s both}
+
+/* buttons (also restyles the legacy .btn on admin pages) */
+.adm-btn,.adm .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:9px 20px;border-radius:999px;border:1.5px solid #d9c9a0;background:#fff;color:#16233a;font-weight:800;font-size:14.5px;cursor:pointer;position:relative;overflow:hidden;transition:transform .18s,box-shadow .2s,background .2s,border-color .2s}
+.adm-btn:hover:not(:disabled),.adm .btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 18px #102f5c1f;border-color:#c9a24a}
+.adm-btn:active:not(:disabled),.adm .btn:active:not(:disabled){transform:translateY(0) scale(.97);box-shadow:none}
+.adm-btn.primary,.adm .btn.primary{background:linear-gradient(135deg,#102f5c,#1a4585);border-color:#102f5c;color:#fff;box-shadow:0 8px 18px #102f5c33}
+.adm-btn.primary:after,.adm .btn.primary:after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,#ffffff40,transparent);transform:skewX(-20deg);transition:left .55s}
+.adm-btn.primary:hover:not(:disabled):after,.adm .btn.primary:hover:not(:disabled):after{left:130%}
+.adm-btn.danger{color:#9a2f24;border-color:#e3b9b3;background:#fff7f6}
+.adm-btn.danger:hover:not(:disabled){background:#b03a2e;border-color:#b03a2e;color:#fff}
+.adm-btn:disabled,.adm .btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* legacy blocks used by the availability / call pages */
+.adm .panel{max-width:none;margin:16px 0;border-radius:22px;background:#fffaf0;border:1px solid #eadfc4;box-shadow:0 10px 28px #102f5c0d;transition:box-shadow .25s}
+.adm .panel:hover{box-shadow:0 16px 34px #102f5c16}
+.adm .field{border:1.5px solid #e3d6b8;background:#fff;border-radius:12px;transition:border-color .2s,box-shadow .2s}
+.adm .field:focus{outline:none;border-color:#c9a24a;box-shadow:0 0 0 4px #c9a24a2e}
+.adm .note{border-radius:14px}
+.adm h3{font:700 21px/1.25 'Lora',Georgia,serif;color:#0f2748}
+.adm .fine{color:#6a7686}
+
+/* empty + loading states */
+.adm-empty{display:grid;justify-items:center;gap:6px;padding:34px 20px;border-radius:22px;border:1.5px dashed #d9c9a0;background:#ffffff80;text-align:center}
+.adm-empty b{font:700 18px 'Lora',Georgia,serif;color:#0f2748}
+.adm-empty span{font-size:14.5px;color:#6a7686;font-weight:500}
+.adm-empty-art{animation:admFloat 4.5s ease-in-out infinite}
+.adm-skel{border-radius:18px;background:linear-gradient(100deg,#efe4c9 30%,#f9f1de 50%,#efe4c9 70%);background-size:220% 100%;animation:admSkel 1.4s linear infinite}
+.adm-skel-title{height:44px;width:220px;margin-bottom:24px}
+.adm-skel-stat{height:84px}
+.adm-skel-card{height:110px}
+
+/* login */
+.adm-login-wrap{max-width:420px!important;margin:0 auto;padding-top:34px!important}
+.adm-login-badge{display:grid;place-items:center;width:74px;height:74px;margin:0 auto 14px;border-radius:22px;background:linear-gradient(135deg,#0b2346,#173d73);border:2px solid #c9a24a;color:#e9c875;font:700 22px 'Lora',Georgia,serif;letter-spacing:1.5px;box-shadow:0 14px 30px #0b234640;animation:admRise .55s both,admFloat 5s ease-in-out .6s infinite}
+.adm-login{padding:30px!important;box-shadow:0 22px 50px #102f5c1f!important}
+
+/* motion */
+.adm-rise{animation:admRise .55s cubic-bezier(.2,.7,.2,1) both}
+@keyframes admRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes admShimmer{to{background-position:-220% 0}}
+@keyframes admGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes admGlow{0%,100%{box-shadow:0 0 0 0 #c9a24a55}50%{box-shadow:0 0 0 9px #c9a24a00}}
+@keyframes admPulse{0%{box-shadow:0 0 0 0 #2f9a6b88}70%{box-shadow:0 0 0 9px #2f9a6b00}100%{box-shadow:0 0 0 0 #2f9a6b00}}
+@keyframes admDrift{from{transform:translate(0,0) scale(1)}to{transform:translate(-70px,50px) scale(1.18)}}
+@keyframes admFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes admBlink{50%{opacity:.45}}
+@keyframes admFlash{0%{box-shadow:0 0 0 0 #c9a24a,0 10px 28px #102f5c0d;background:#fff3cf}100%{box-shadow:0 0 0 14px #c9a24a00,0 10px 28px #102f5c0d;background:#fffaf0}}
+@keyframes admShake{20%{transform:translateX(-6px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
+@keyframes admSkel{to{background-position:-220% 0}}
+
+@media(max-width:900px){.adm-stats{grid-template-columns:repeat(2,1fr)}.adm-card{flex-wrap:wrap}.adm-card-side{min-width:100%}.adm-actions.end{max-width:none;justify-content:flex-start;width:100%}}
+@media(max-width:560px){.adm-main{padding:0 14px 60px}.adm-top-inner{gap:12px}.adm-nav{margin-left:0;order:3;width:100%}.adm-user-email{display:none}.adm-stats{gap:10px}.adm-stat{padding:14px}.adm-stat-num{font-size:28px}.adm-card{padding:16px}}
+@media(prefers-reduced-motion:reduce){.adm *,.adm *:before,.adm *:after{animation:none!important;transition:none!important}.adm-rise{opacity:1!important}}

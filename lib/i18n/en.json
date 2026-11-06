@@ -102,6 +102,7 @@
   "booking.step1": "1. Choose a date",
   "booking.step2": "2. Choose a time",
   "booking.selectDateFirst": "Select a date first.",
+  "booking.slotBooked": "Booked",
   "booking.minDuration": "Time slots are shown in 30-minute intervals.",
   "booking.step2b": "Choose your session length",
   "booking.durationHint": "Longer sessions cost less per minute.",

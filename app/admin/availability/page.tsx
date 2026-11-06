@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useAdminAuth } from "../../../lib/useAdminAuth";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -148,11 +147,12 @@ export default function AdminAvailabilityPage() {
   return (
     <section>
       <div className="wrap">
-        <div className="eyebrow">JUM Admin</div>
-        <h2 style={{ margin: "4px 0" }}>Availability</h2>
-        <p className="fine">
-          <Link href="/admin">← Back to dashboard</Link>
-        </p>
+        <div className="adm-head adm-rise">
+          <div>
+            <div className="adm-eyebrow">JUM Admin</div>
+            <h1 className="adm-title">Availability</h1>
+          </div>
+        </div>
 
         <h3 style={{ marginTop: 30 }}>Weekly hours</h3>
         <p className="fine">A day with no hours set is closed — customers won&apos;t see any bookable times on it.</p>

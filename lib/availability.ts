@@ -125,6 +125,19 @@ export async function getBookedRanges(dateStr: string): Promise<Window[]> {
  * `dateStr` is today (IST).
  */
 export async function getAvailableStartTimes(dateStr: string, durationMinutes: number): Promise<number[]> {
+  return (await getStartTimeOptions(dateStr, durationMinutes)).available;
+}
+
+/**
+ * Same candidate times as getAvailableStartTimes, split in two: `available`
+ * (bookable) and `booked` (would fit the opening hours but overlap an existing
+ * booking — shown to customers as "Booked" instead of silently disappearing).
+ * Times already in the past, or that don't fit before closing, are in neither.
+ */
+export async function getStartTimeOptions(
+  dateStr: string,
+  durationMinutes: number
+): Promise<{ available: number[]; booked: number[] }> {
   if (durationMinutes <= 0 || durationMinutes % SLOT_STEP_MINUTES !== 0) {
     throw new Error(`durationMinutes must be a positive multiple of ${SLOT_STEP_MINUTES}`);
   }
@@ -135,14 +148,18 @@ export async function getAvailableStartTimes(dateStr: string, durationMinutes: n
   const istNow = getIstNow();
   const isToday = targetDate.getTime() === istNow.date.getTime();
 
-  const starts: number[] = [];
+  const available: number[] = [];
+  const bookedStarts: number[] = [];
   for (const w of openWindows) {
     for (let t = w.start; t + durationMinutes <= w.end; t += SLOT_STEP_MINUTES) {
       if (isToday && t <= istNow.minutes) continue;
       const candidate: Window = { start: t, end: t + durationMinutes };
-      if (booked.some((b) => overlaps(candidate, b))) continue;
-      starts.push(t);
+      if (booked.some((b) => overlaps(candidate, b))) {
+        bookedStarts.push(t);
+        continue;
+      }
+      available.push(t);
     }
   }
-  return starts;
+  return { available, booked: bookedStarts };
 }
