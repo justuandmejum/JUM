@@ -86,7 +86,7 @@ export default function Home() {
           <div className="boundary-grid">
             <div>
               <div className="eyebrow">{t("boundary.eyebrow")}</div>
-              <h2 style={{ font: "600 38px 'Fraunces',Georgia,serif" }}>{t("boundary.h2")}</h2>
+              <h2 style={{ font: "600 38px 'Lora',Georgia,serif" }}>{t("boundary.h2")}</h2>
               <p style={{ color: "#43566f" }}>{t("boundary.p")}</p>
             </div>
             <div className="not">
@@ -134,7 +134,7 @@ export default function Home() {
                   <circle cx="72" cy="82" r="4.5" fill="#c9a24a" />
                 </svg>
               </div>
-              <h3 style={{ font: "600 26px 'Fraunces',Georgia,serif" }}>{t("device.card.h")}</h3>
+              <h3 style={{ font: "600 26px 'Lora',Georgia,serif" }}>{t("device.card.h")}</h3>
               <p style={{ color: "#3f4c5e", fontWeight: 500 }}>{t("device.card.p")}</p>
               <div className="callopts callopts4" style={{ marginTop: 16 }}>
                 <div className="callopt jumopt" style={{ cursor: "default" }}>

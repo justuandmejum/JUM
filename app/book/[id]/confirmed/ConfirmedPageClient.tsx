@@ -65,7 +65,7 @@ export function ConfirmedPageClient({ bookingId }: { bookingId: string }) {
             <p className="fine" style={{ margin: "0 0 8px" }}>
               {t("sent.callCodeLabel")}
             </p>
-            <p style={{ font: "700 28px 'Fraunces',Georgia,serif", color: "#102f5c", letterSpacing: 2, margin: 0 }}>
+            <p style={{ font: "700 28px 'Lora',Georgia,serif", color: "#102f5c", letterSpacing: 2, margin: 0 }}>
               {booking?.callCode ?? "…"}
             </p>
             <p className="fine" style={{ margin: "8px 0 0" }}>
